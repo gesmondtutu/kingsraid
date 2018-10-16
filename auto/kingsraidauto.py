@@ -37,9 +37,19 @@ def printStatus():
   if not msg.debug:
     print(message, end='\r')
 
+def imageSameSize(img1, img2):
+  return img1.shape == img2.shape
+
+def resizeImage(img, width, height):
+  return cv2.resize(img, (width, height))
+
 def applyMaskToImage(mask_path, img_path):
   img = cv2.imread(img_path)
   mask = cv2.imread(mask_path, 0)
+  if not imageSameSize(img, mask):
+    height, width = img.shape[:2]
+    mask = resizeImage(mask, width, height)
+
   dst = cv2.bitwise_and(img,img,mask=mask)
   return cv2.resize(dst, (0,0), fx=resize_percent, fy=resize_percent)
 
@@ -86,6 +96,12 @@ def compareDisplayScreen(match_image, mask, match_image_alt=None, mask_alt=None,
   s_cv = applyMaskToImage(mask, savepath)
   delta_t = time.time() - t
   printd(f'Time to apply image mask: {delta_t}')
+
+  # Check images are the same dimensions, resize master if not
+  if not imageSameSize(s_cv, match_image):
+    height, width = s_cv.shape[:2]
+    match_image = resizeImage(match_image, width, height)
+    printd(f'Image resized to match screenshot dimensions: {width} {height}')
 
   t = time.time()
   delta = ssim.compare_ssim(s_cv, match_image, multichannel=True)
